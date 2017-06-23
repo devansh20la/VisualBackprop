@@ -17,11 +17,13 @@ imgExt = ".jpg"
 
 imagenames = os.listdir(inputimages)
 
+#Taking batches of 10 images of size 224x224
 imgCnt = 10
 imgCh = 3
 imgH = 224
 imgW = 224
 
+#Scaling images to required sizes.
 trans = transforms.Compose([transforms.ToPILImage(),
 							transforms.Scale(256),
 							transforms.CenterCrop(224),
@@ -36,16 +38,22 @@ def getimages(n, out,fmaps,fmapsmasked):
     w = int(out.size()[3])
 
     scalingtr = nn.UpsamplingBilinear2d(size=(h,w))
+
     imgout = torch.Tensor(3, imgH,imgW).cuda()
+
+    #placing all intermediate maps and masks in one big array
     fMapsImg = torch.ones(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w).cuda()
     fMapsImgM = torch.ones(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w).cuda()
 
     for i in range(0,len(fmaps)):
+
+        #normalization
         min = fmaps[i][n,0].min()
         max = fmaps[i][n,0].max()
         fmaps[i][n,0] = torch.add(fmaps[i][n,0],-min.expand(fmaps[i][n,0].size()))
         fmaps[i][n,0] = torch.div(fmaps[i][n,0],(max-min).expand(fmaps[i][n,0].size()))
 
+        #normalization
         min = fmapsmasked[i][n,0].min()
         max = fmapsmasked[i][n,0].max()
         fmapsmasked[i][n,0] = torch.add(fmapsmasked[i][n,0],-min.expand(fmapsmasked[i][n,0].size()))
@@ -58,6 +66,7 @@ def getimages(n, out,fmaps,fmapsmasked):
     imgout[1].copy_(imgBatch[n][0].data).add(-out[n][0].data)
     imgout[2].copy_(imgBatch[n][0].data).add(-out[n][0].data)
     imgout.clamp(0,1)
+    
     return imgout,fMapsImg,fMapsImgM
 
 #------------------------------------------------------------------------------------
@@ -73,6 +82,8 @@ for i in range (0,10):
 	imgBatch[i,:,:,:] = trans(io.imread(os.path.join(inputimages,imagenames[i])))
 
 imgBatch = Variable(imgBatch)
+
+#Obtain visualization mask
 vismask, fmaps, fmapsM = vismask(model, imgBatch)
 
 print("....Saving images.....")
