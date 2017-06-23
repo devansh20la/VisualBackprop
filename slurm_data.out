@@ -1,0 +1,21 @@
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img100.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img101.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img102.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img103.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img104.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img105.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img106.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img107.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+/share/apps/scikit-image/0.12.3/intel/lib/python2.7/site-packages/scikit_image-0.12.3-py2.7-linux-x86_64.egg/skimage/io/_io.py:132: UserWarning: outputimages/img109.png is a low contrast image
+  warn('%s is a low contrast image' % fname)
+.....Loading model.....
+...Loading Images...
+....Saving images.....
