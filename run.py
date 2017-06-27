@@ -9,13 +9,9 @@ from vismask import vismask
 
 outputimages = "outputimages/img"
 inputimages = "inputimages/"
-imgFileName = "img"
-outFileName = "out"
-fmapFileName = "fmap"
-maskFileName = "mask"
-imgExt = ".jpg"
+imgExt = "jpg"
 
-imagenames = os.listdir(inputimages)
+imagenames = [fn for fn in os.listdir(inputimages) if fn.endswith(imgExt)]
 
 #Taking batches of 10 images of size 224x224
 imgCnt = 10
@@ -34,37 +30,39 @@ imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW).cuda()
 
 #------------------------------------------------------------------------------------
 def getimages(n, out,fmaps,fmapsmasked):
-    h = int(out.size()[2])
-    w = int(out.size()[3])
+
+    h = out.size(2)
+    w = out.size(3)
 
     scalingtr = nn.UpsamplingBilinear2d(size=(h,w))
 
     imgout = torch.Tensor(3, imgH,imgW).cuda()
 
     #placing all intermediate maps and masks in one big array
-    fMapsImg = torch.ones(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w).cuda()
-    fMapsImgM = torch.ones(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w).cuda()
+    fMapsImg = torch.zeros(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w)
+    fMapsImgM = torch.zeros(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w)
 
     for i in range(0,len(fmaps)):
 
         #normalization
-        min = fmaps[i][n,0].min()
-        max = fmaps[i][n,0].max()
-        fmaps[i][n,0] = torch.add(fmaps[i][n,0],-min.expand(fmaps[i][n,0].size()))
-        fmaps[i][n,0] = torch.div(fmaps[i][n,0],(max-min).expand(fmaps[i][n,0].size()))
+        minvalue = fmaps[i][n,0].min()
+        maxvalue = fmaps[i][n,0].max()
+        fmaps[i][n] = torch.add(fmaps[i][n],-minvalue)
+        fmaps[i][n] = torch.div(fmaps[i][n],(maxvalue-minvalue))
 
         #normalization
-        min = fmapsmasked[i][n,0].min()
-        max = fmapsmasked[i][n,0].max()
-        fmapsmasked[i][n,0] = torch.add(fmapsmasked[i][n,0],-min.expand(fmapsmasked[i][n,0].size()))
-        fmapsmasked[i][n,0] = torch.div(fmapsmasked[i][n,0],(max-min).expand(fmapsmasked[i][n,0].size()))
+        minvalue = fmapsmasked[i][n,0].min()
+        maxvalue = fmapsmasked[i][n,0].max()
+        fmapsmasked[i][n] = torch.add(fmapsmasked[i][n],-minvalue)
+        fmapsmasked[i][n] = torch.div(fmapsmasked[i][n],(maxvalue-minvalue))
         
-        fMapsImg.narrow(1,(i)*(h+2),w).copy_(scalingtr(fmaps[i].float())[n].data).cuda()
-        fMapsImgM.narrow(1,(i)*(h+2),w).copy_(scalingtr(fmapsmasked[i].float())[n].data).cuda()
+        #saving the normalized map and mask
+        fMapsImg.narrow(1,(i)*(h+2),w).copy_(scalingtr(Variable(fmaps[i].float())).data[n]).cuda()
+        fMapsImgM.narrow(1,(i)*(h+2),w).copy_(scalingtr(Variable(fmapsmasked[i].float())).data[n]).cuda()
 
-    imgout[0].copy_(imgBatch[n][0].data).add(out[n][0].data)
-    imgout[1].copy_(imgBatch[n][0].data).add(-out[n][0].data)
-    imgout[2].copy_(imgBatch[n][0].data).add(-out[n][0].data)
+    imgout[0].copy_(imgBatch[n][0].data).add(out[n][0])
+    imgout[1].copy_(imgBatch[n][0].data).add(-out[n][0])
+    imgout[2].copy_(imgBatch[n][0].data).add(-out[n][0])
     imgout.clamp(0,1)
     
     return imgout,fMapsImg,fMapsImgM
@@ -99,5 +97,5 @@ for i in range(0,10):
 	io.imsave(outputimages + str(3*i+2) + '.png',img2)
 	io.imsave(outputimages + str(3*i+3) + '.png',img3)
 
-	io.imsave(outputimages + str(100+i) + '.png',to_pil(vismask[i].data.cpu()))
+	io.imsave(outputimages + str(100+i) + '.png',to_pil(vismask[i].cpu()))
 

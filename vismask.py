@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets,models,transforms
+from matplotlib import pyplot as plt
 
-#Since pytorch does not save intermediate outputs to save memory unlike torch/lua, 
-#a new class is created with a defined forward function
+#Since pytorch does not save intermediate outputs unlike torch/lua, 
+#a new class is created with a newly defined forward function
 
 class myFeatureExtractor(nn.Module):
     def __init__(self, model):
@@ -15,13 +16,21 @@ class myFeatureExtractor(nn.Module):
     def forward(self, x):
         outputs = []
         for sub in [self.features]:
+            #iteratin gover modules in the model
             for name, module in sub._modules.items():
                 x = module(x)
-
-                # Saving results after each ReLU layer
+                # Saving results after each ReLU activation layer
                 if type(module) == torch.nn.modules.activation.ReLU:
-                    outputs.append(x)
+                    outputs.append(x.data)
         return outputs
+
+def normalization(tensor):
+    omin = tensor.min(2)[0].min(3)[0].mul(-1)
+    omax = tensor.max(2)[0].max(3)[0].add(omin)
+
+    tensor = torch.add(tensor,omin.expand(tensor.size(0), tensor.size(1), tensor.size(2), tensor.size(3)))
+    tensor = torch.div(tensor,omax.expand(tensor.size(0),tensor.size(1), tensor.size(2), tensor.size(3)))
+    return tensor
 
 def vismask(model,imgBatch):
     model = myFeatureExtractor(model)
@@ -32,23 +41,26 @@ def vismask(model,imgBatch):
     fmaps = []
     fmapsmasked = []
     sumUp = []
+    to_pil = transforms.ToPILImage()
 
     for i in range(0,len(output)):
 
-        #sum all feature maps
+        #sum all feature maps in a lyer
         summation.append(output[i].sum(1))
 
-        #saving the
+        #saving the map (sum of all the feature in a layer)
         fmaps.append(summation[i].clone())
 
-        #point wise multiplication
+        #point wise multiplication (multiplying output with the previous layer (backpropagating))
         if i > 0:
-            summation[i] = summation[i].mul(sumUp[i - 1])
+            summation[i] = torch.mul(summation[i],sumUp[i - 1])
+            # summation[i] = normalization(summation[i])
+            # summation[i][summation[i] > 0.25] = 1
 
-        #save intermediate mask    
+        #save the intermediate mask (image obtained by backpropagating at every layer)
         fmapsmasked.append(summation[i].clone())
 
-        if i < len(output) - 2:
+        if i < len(output)-1:
             if output[i].size() != output[i+1].size():
 
                 #scaling up the feature map using deconvolution operation
@@ -56,8 +68,9 @@ def vismask(model,imgBatch):
                 mmUp.cuda()
                 mmUp.weight.data.fill_(1)
                 mmUp.bias.data.fill_(0)
+                
+                sumUp.append(mmUp.forward(Variable(summation[i])).data)
 
-                sumUp.append(mmUp.forward(summation[i]))
             else:
                 sumUp.append(summation[i].clone())
         else:
@@ -65,9 +78,6 @@ def vismask(model,imgBatch):
 
     #normalizing the final mask.
     out = summation[-1]
-    omin = out.min(2)[0].min(3)[0]
-    omax = out.max(2)[0].max(3)[0].sub(omin)
-    out.sub_(omin.expand(out.size(0), out.size(1), out.size(2), out.size(3)))
-    out = torch.div(out,omax.expand(out.size(0),out.size(1), out.size(2), out.size(3)))
+    out = normalization(out)
 
     return out, fmaps, fmapsmasked
