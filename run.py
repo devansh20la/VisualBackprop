@@ -19,11 +19,12 @@ imgCh = 3
 imgH = 224
 imgW = 224
 
-#Scaling images to required sizes.
+#Scaling and normalizing the images to required sizes (mean and std deviation are values required by trained VGG model)
 trans = transforms.Compose([transforms.ToPILImage(),
 							transforms.Scale(256),
 							transforms.CenterCrop(224),
-							transforms.ToTensor()])
+							transforms.ToTensor(),
+                            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
 # imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW)
 imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW).cuda()
@@ -79,7 +80,7 @@ print ("...Loading Images...")
 for i in range (0,10):
 	imgBatch[i,:,:,:] = trans(io.imread(os.path.join(inputimages,imagenames[i])))
 
-imgBatch = Variable(imgBatch)
+imgBatch = Variable(imgBatch, volatile = True)
 
 #Obtain visualization mask
 vismask, fmaps, fmapsM = vismask(model, imgBatch)

@@ -68,8 +68,7 @@ def vismask(model,imgBatch):
                 mmUp.cuda()
                 mmUp.weight.data.fill_(1)
                 mmUp.bias.data.fill_(0)
-                
-                sumUp.append(mmUp.forward(Variable(summation[i])).data)
+                sumUp.append(mmUp.forward(Variable(summation[i]),volatile=True).data)
 
             else:
                 sumUp.append(summation[i].clone())
