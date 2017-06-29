@@ -4,14 +4,14 @@ The dependencies required before running the code are as follows:
 
 import torch \
 from skimage import io  \
-from matplotlib import pyplot as plt \
+from matplotlib import pyplot as plt 
 
-Steps required before running the code: \
+Steps required before running the code: 
 
 1.  After training a model on the required dataset save it using torch.save as "model.pth" file. \
 2.  Copy the model in the folder. \
 3.  Copy required image in the input folder \
-4.  Run "run.py" \
+4.  Run "run.py" 
 
 The output images will be saved in the output folder. \
 
