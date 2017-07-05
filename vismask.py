@@ -67,10 +67,10 @@ def vismask(model,imgBatch):
 
                 #scaling up the feature map using deconvolution operation
                 mmUp = nn.ConvTranspose2d(1,1,kernel_size=(2,2),stride=(2,2),padding=(0,0),dilation=(1,1),output_padding=(0,0))
-                mmUp.cuda()
+                # mmUp.cuda()
                 mmUp.weight.data.fill_(1)
                 mmUp.bias.data.fill_(0)
-                sumUp.append(mmUp.forward(Variable(summation[i]),volatile=True).data)
+                sumUp.append(mmUp.forward(Variable(summation[i],volatile=True)).data)
 
             else:
 
