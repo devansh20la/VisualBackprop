@@ -33,6 +33,8 @@ def normalization(tensor):
     return tensor
 
 def vismask(model,imgBatch):
+
+    #running the model on the input batch of images and saving output
     model = myFeatureExtractor(model)
     output = model.forward(imgBatch)
     output.reverse()
@@ -71,8 +73,11 @@ def vismask(model,imgBatch):
                 sumUp.append(mmUp.forward(Variable(summation[i]),volatile=True).data)
 
             else:
+
+                #Since output of convolution in VGG16 is of the same size as input no deconvolution is performed if the sizes are the same
                 sumUp.append(summation[i].clone())
         else:
+
             sumUp.append(summation[i].clone())
 
     #normalizing the final mask.
