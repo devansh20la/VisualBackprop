@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.autograd import Variable
-from torchvision import datasets,models,transforms
+from torchvision import models,transforms
 import os
 from skimage import io 
 from vismask import vismask 
@@ -26,7 +25,7 @@ trans = transforms.Compose([transforms.ToPILImage(),
 							transforms.ToTensor(),
                             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
-# imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW)
+# imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW).cuda()
 imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW)
 
 #------------------------------------------------------------------------------------
@@ -40,8 +39,8 @@ def getimages(n, out,fmaps,fmapsmasked):
     imgout = torch.Tensor(3, imgH,imgW)
 
     #placing all intermediate maps and masks in one big array
-    fMapsImg = torch.zeros(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w)
-    fMapsImgM = torch.zeros(1,len(fmaps) * h + (len(fmaps) - 1) * 2, w)
+    fMapsImg = torch.zeros(1,len(fmaps) * h, w)
+    fMapsImgM = torch.zeros(1,len(fmaps) * h, w)
 
     for i in range(0,len(fmaps)):
 
@@ -58,8 +57,8 @@ def getimages(n, out,fmaps,fmapsmasked):
         fmapsmasked[i][n] = torch.div(fmapsmasked[i][n],(maxvalue-minvalue))
         
         #saving the normalized map and mask
-        fMapsImg.narrow(1,(i)*(h+2),w).copy_(scalingtr(Variable(fmaps[i].float())).data[n])
-        fMapsImgM.narrow(1,(i)*(h+2),w).copy_(scalingtr(Variable(fmapsmasked[i].float())).data[n])
+        fMapsImg.narrow(1,(i)*(h),h).copy_(scalingtr(Variable(fmaps[i].float())).data[n])
+        fMapsImgM.narrow(1,(i)*(h),h).copy_(scalingtr(Variable(fmapsmasked[i].float())).data[n])
 
     imgout[0].copy_(imgBatch[n][0].data).add(out[n][0])
     imgout[1].copy_(imgBatch[n][0].data).add(-out[n][0])
