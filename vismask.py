@@ -63,7 +63,7 @@ def vismask(model,imgBatch):
         #point wise multiplication (multiplying output with the previous layer (backpropagating))
         if i < len(output)-1:
             summation[i] = torch.mul(summation[i],sumUp[i + 1])
-            # summation[i] = normalization(summation[i])
+            summation[i] = normalization(summation[i])
             # summation[i][summation[i] > 0.25] = 1
 
         #save the intermediate mask (image obtained by backpropagating at every layer)
@@ -74,21 +74,30 @@ def vismask(model,imgBatch):
 
                 #scaling up the feature map using deconvolution operation
                 mmUp = nn.ConvTranspose2d(1,1,kernel_size=(2,2),stride=(2,2),padding=(0,0),dilation=(1,1),output_padding=(0,0))
-                # mmUp.cuda()
+                mmUp.cuda()
                 mmUp.weight.data.fill_(1)
                 mmUp.bias.data.fill_(0)
                 sumUp[i] = (mmUp.forward(Variable(summation[i],volatile=True)).data).clone()
 
             else:
-
+                mmUp = nn.ConvTranspose2d(1,1,kernel_size=(3,3),stride=(1,1),padding=(1,1),dilation=(1,1),output_padding=(0,0))
+                mmUp.cuda()
+                mmUp.weight.data.fill_(1)
+                mmUp.bias.data.fill_(0)
                 #Since output of convolution in VGG16 is of the same size as input no deconvolution is performed if the sizes are the same
-                sumUp[i] = summation[i].clone()
+                sumUp[i] = (mmUp.forward(Variable(summation[i],volatile=True)).data).clone()
         else:
+            mmUp = nn.ConvTranspose2d(1,1,kernel_size=(3,3),stride=(1,1),padding=(1,1),dilation=(1,1),output_padding=(0,0))
+            mmUp.cuda()
+            mmUp.weight.data.fill_(1)
+            mmUp.bias.data.fill_(0)
+            #Since output of convolution in VGG16 is of the same size as input no deconvolution is performed if the sizes are the same
+            sumUp[i] = (mmUp.forward(Variable(summation[i],volatile=True)).data).clone()
 
-            sumUp[i] = summation[i].clone()
+            # sumUp[i] = summation[i].clone()
 
     #normalizing the final mask.
     out = summation[i]
-    out = normalization(out)
+    out = torch.sqrt(torch.sqrt(normalization(out)))
 
     return out, fmaps, fmapsmasked

@@ -25,8 +25,8 @@ trans = transforms.Compose([transforms.ToPILImage(),
 							transforms.ToTensor(),
                             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
-# imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW).cuda()
-imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW)
+imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW).cuda()
+# imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW)
 
 #------------------------------------------------------------------------------------
 def getimages(n, out,fmaps,fmapsmasked):
@@ -36,11 +36,11 @@ def getimages(n, out,fmaps,fmapsmasked):
 
     scalingtr = nn.UpsamplingBilinear2d(size=(h,w))
 
-    imgout = torch.Tensor(3, imgH,imgW)
+    imgout = torch.Tensor(3, imgH,imgW).cuda()
 
     #placing all intermediate maps and masks in one big array
-    fMapsImg = torch.zeros(1,len(fmaps) * h, w)
-    fMapsImgM = torch.zeros(1,len(fmaps) * h, w)
+    fMapsImg = torch.ones(1,len(fmaps) * h + (len(fmaps)-1)*20, w)
+    fMapsImgM = torch.ones(1,len(fmaps) * h + (len(fmaps)-1)*20, w)
 
     for i in range(0,len(fmaps)):
 
@@ -57,8 +57,8 @@ def getimages(n, out,fmaps,fmapsmasked):
         fmapsmasked[i][n] = torch.div(fmapsmasked[i][n],(maxvalue-minvalue))
         
         #saving the normalized map and mask
-        fMapsImg.narrow(1,(i)*(h),h).copy_(scalingtr(Variable(fmaps[i].float())).data[n])
-        fMapsImgM.narrow(1,(i)*(h),h).copy_(scalingtr(Variable(fmapsmasked[i].float())).data[n])
+        fMapsImg.narrow(1,(i)*(h+20),h).copy_(scalingtr(Variable(fmaps[i].float())).data[n]).cuda()
+        fMapsImgM.narrow(1,(i)*(h+20),h).copy_(scalingtr(Variable(fmapsmasked[i].float())).data[n]).cuda()
 
     imgout[0].copy_(imgBatch[n][0].data).add(out[n][0])
     imgout[1].copy_(imgBatch[n][0].data).add(-out[n][0])
@@ -71,8 +71,8 @@ def getimages(n, out,fmaps,fmapsmasked):
 
 
 print (".....Loading model.....")
-# model = torch.load('model.pth')
-model = models.vgg16(pretrained=True)
+model = torch.load('model.pth')
+# model = models.vgg16(pretrained=True)
 
 print ("...Loading Images...")
 
