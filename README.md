@@ -17,3 +17,7 @@ The output images will be saved in the output folder.
 
 The program loads a batch of 10 input images and processes it, if you want to load a batch of more images please edit the code in run.py.
 
+Some results on skin lesion image classification are shown below:
+![isic_0013281](https://user-images.githubusercontent.com/16810812/30251740-eb53144a-9633-11e7-8609-94a4a377c130.png)
+![isic_0013281final](https://user-images.githubusercontent.com/16810812/30251741-eb53d3ee-9633-11e7-98ff-d866f449007c.png)
+![isic_0013281overlayedmap](https://user-images.githubusercontent.com/16810812/30251739-eb531760-9633-11e7-9002-c6f8726ef5a6.png)
