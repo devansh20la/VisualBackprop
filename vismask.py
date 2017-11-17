@@ -97,7 +97,7 @@ def vismask(model,imgBatch):
             # sumUp[i] = summation[i].clone()
 
     #normalizing the final mask.
-    out = summation[i]
+    out = sumUp[i]
     out = torch.sqrt(torch.sqrt(normalization(out)))
 
     return out, fmaps, fmapsmasked

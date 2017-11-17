@@ -4,16 +4,17 @@ from torch.autograd import Variable
 from torchvision import models,transforms
 import os
 from skimage import io 
-from vismask import vismask 
+from vismask_resnet import vismask 
+import numpy as np
 
-outputimages = "outputimages/img"
+outputimages = "outputimages/"
 inputimages = "inputimages/"
-imgExt = "JPEG"
+imgExt = ".jpg"
 
 imagenames = [fn for fn in os.listdir(inputimages) if fn.endswith(imgExt)]
 
 #Taking batches of 10 images of size 224x224
-imgCnt = 10
+imgCnt = 125
 imgCh = 3
 imgH = 224
 imgW = 224
@@ -26,7 +27,6 @@ trans = transforms.Compose([transforms.ToPILImage(),
                             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
 imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW).cuda()
-# imgBatch = torch.Tensor(imgCnt, imgCh, imgH, imgW)
 
 #------------------------------------------------------------------------------------
 def getimages(n, out,fmaps,fmapsmasked):
@@ -35,8 +35,6 @@ def getimages(n, out,fmaps,fmapsmasked):
     w = out.size(3)
 
     scalingtr = nn.UpsamplingBilinear2d(size=(h,w))
-
-    imgout = torch.Tensor(3, imgH,imgW).cuda()
 
     #placing all intermediate maps and masks in one big array
     fMapsImg = torch.ones(1,len(fmaps) * h + (len(fmaps)-1)*20, w)
@@ -59,27 +57,30 @@ def getimages(n, out,fmaps,fmapsmasked):
         #saving the normalized map and mask
         fMapsImg.narrow(1,(i)*(h+20),h).copy_(scalingtr(Variable(fmaps[i].float())).data[n]).cuda()
         fMapsImgM.narrow(1,(i)*(h+20),h).copy_(scalingtr(Variable(fmapsmasked[i].float())).data[n]).cuda()
-
-    imgout[0].copy_(imgBatch[n][0].data).add(out[n][0])
-    imgout[1].copy_(imgBatch[n][0].data).add(-out[n][0])
-    imgout[2].copy_(imgBatch[n][0].data).add(-out[n][0])
-    imgout.clamp(0,1)
     
-    return imgout,fMapsImg,fMapsImgM
+    return fMapsImg,fMapsImgM
 
 #------------------------------------------------------------------------------------
 
 
 print (".....Loading model.....")
-model = torch.load('model.pth')
-# model = models.vgg16(pretrained=True)
+#model = torch.load('model.pth')
+#model.eval()
+
+model = models.resnet50(pretrained=True)
+model.fc = nn.Linear(2048,3)
+model.cuda()
+
+model.load_state_dict(torch.load('model.pth'))
+model.eval()
 
 print ("...Loading Images...")
 
-for i in range (0,10):
-	imgBatch[i,:,:,:] = trans(io.imread(os.path.join(inputimages,imagenames[i])))
 
-imgBatch = Variable(imgBatch, volatile = True)
+for i in range (0,imgCnt):
+    imgBatch[i,:,:,:] = trans(io.imread(os.path.join(inputimages,imagenames[i])))
+
+imgBatch = Variable(imgBatch.cuda(), volatile = True)
 
 #Obtain visualization mask
 vismask, fmaps, fmapsM = vismask(model, imgBatch)
@@ -87,15 +88,13 @@ vismask, fmaps, fmapsM = vismask(model, imgBatch)
 print("....Saving images.....")
 to_pil = transforms.ToPILImage()
 
-for i in range(0,10):
-	img1,img2,img3 = getimages(i,vismask,fmaps,fmapsM)
+for i in range(0,imgCnt):
+	img1,img2 = getimages(i,vismask,fmaps,fmapsM)
 	img1 = to_pil(img1.cpu())
 	img2 = to_pil(img2.cpu())
-	img3 = to_pil(img3.cpu())
 
-	io.imsave(outputimages + str(3*i+1) + '.png',img1)
-	io.imsave(outputimages + str(3*i+2) + '.png',img2)
-	io.imsave(outputimages + str(3*i+3) + '.png',img3)
+	io.imsave(outputimages + imagenames[i].split(".")[0] + str('maps') + '.png',img1)
+	io.imsave(outputimages + imagenames[i].split(".")[0] + str('mask') + '.png',img2)
 
-	io.imsave(outputimages + str(100+i) + '.png',to_pil(vismask[i].cpu()))
+	io.imsave(outputimages + imagenames[i].split(".")[0] + str('final') + '.png',to_pil(vismask[i].cpu()))
 
