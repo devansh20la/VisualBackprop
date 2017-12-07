@@ -22,7 +22,7 @@ class imageandlabel(Dataset):
     def __getitem__(self,idx):
 
         imgname = os.path.join(self.root_dir,self.csvfile.iloc[idx,0])
-        image = Image.open(imgname)
+        image = Image.open(imgname+'.jpg')
         label = self.csvfile.ix[idx,1]
         prediction = self.csvfile.ix[idx,2]
 
@@ -33,9 +33,3 @@ class imageandlabel(Dataset):
 
         return sample
 
-class RandomVerticleFlip(object):
-
-    def __call__(self, img):
-        if random.random() < 0.5:
-            return img.transpose(Image.FLIP_TOP_BOTTOM)
-        return img
