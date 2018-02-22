@@ -12,24 +12,31 @@ import random
 class imageandlabel(Dataset):
 
     def __init__ (self,root_dir,csv_file,trans=None):
-        self.csvfile = pd.read_csv(csv_file)
+        # self.csvfile = pd.read_csv(csv_file)
+        self.files = [fn for fn in os.listdir(root_dir) if fn.endswith('.jpg')]
+
         self.trans = trans
         self.root_dir = root_dir
 
     def __len__(self):
-        return len(self.csvfile)
+        return len(self.files)
+        # return len(self.csvfile)
 
     def __getitem__(self,idx):
-
-        imgname = os.path.join(self.root_dir,self.csvfile.iloc[idx,0])
-        image = Image.open(imgname+'.jpg')
-        label = self.csvfile.ix[idx,1]
-        prediction = self.csvfile.ix[idx,2]
+        # imgname = os.path.join(self.root_dir,self.csvfile.iloc[idx,0])
+        imgname = os.path.join(self.root_dir,self.files[idx])
+        # image = Image.open(imgname+'.jpg')
+        image = Image.open(imgname)
+        label = 0
+        # self.csvfile.ix[idx,1]
+        prediction = 0
+        # self.csvfile.ix[idx,2]
 
         if self.trans:
             image = self.trans(image)
 
-        sample = {'image': image, 'label': label, 'prediction': prediction,'path': self.csvfile.iloc[idx,0]}
+        sample = {'image': image, 'label': label, 'prediction': prediction,'path': self.files[idx]}
+        # self.csvfile.iloc[idx,0]}
 
         return sample
 

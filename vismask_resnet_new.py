@@ -14,8 +14,7 @@ class myFeatureExtractor(resnet.ResNet):
     def __init__(self,load=None):
         super(myFeatureExtractor, self).__init__(resnet.Bottleneck, [3, 4, 6, 3])
         self.fc = nn.Linear(2048,3)
-        if load is not None:
-            self.load_state_dict(torch.load(load)['model'])
+        # self.load_state_dict(torch.load(load)['model'])
 
     def handlesequential(self,x,module,output):
         i = len(output)
@@ -59,11 +58,13 @@ def vismask(imgBatch):
 
     #running the model on the input batch of images and saving output
     model = myFeatureExtractor('model_best.pth.tar')
-    model = model.cuda()
+    if torch.cuda.is_available():
+    	model = model.cuda()
     model.eval()
     model.train(False)
 
     output = model(imgBatch)
+    # print (len(output))
     #output = output.cpu()
 
     summation = {}
@@ -98,26 +99,41 @@ def vismask(imgBatch):
                 mmUp.weight.data.fill_(1)
                 mmUp.bias.data.fill_(0)
 
-                mmUp.cuda()
-
-                sumUp[i] = mmUp(Variable(summation[i].cuda(), volatile=True)).data.clone()
+                if torch.cuda.is_available():
+                    mmUp.cuda()
+                    sumUp[i] = mmUp(Variable(summation[i].cuda(), volatile=True)).data.clone()
+                else:
+                    sumUp[i] = mmUp(Variable(summation[i], volatile=True)).data.clone()
 
             else:
 
                 mmUp = nn.ConvTranspose2d(1,1,kernel_size=(6,6),stride=(2,2),padding=(2,2))
-                mmUp.cuda()
+
+                if torch.cuda.is_available():
+                	mmUp.cuda()
 
                 mmUp.weight.data.fill_(1)
                 mmUp.bias.data.fill_(0)
-
-                sumUp[i] = mmUp(Variable(summation[i].cuda(),volatile=True)).data.clone()
+                
+                if torch.cuda.is_available():
+                    sumUp[i] = mmUp(Variable(summation[i].cuda(),volatile=True)).data.clone()
+                else:
+                    sumUp[i] = mmUp(Variable(summation[i],volatile=True)).data.clone()
 
         else:
             mmUp = nn.ConvTranspose2d(1,1,kernel_size=(7,7),stride=(2,2),padding=(3,3),output_padding=(1,1))
-            mmUp.cuda()
+
+            if torch.cuda.is_available():
+            	mmUp.cuda()
+
             mmUp.weight.data.fill_(1)
             mmUp.bias.data.fill_(0)
-            sumUp[i] = mmUp(Variable(summation[i].cuda(),volatile=True)).data.clone()
+
+            if torch.cuda.is_available():
+                sumUp[i] = mmUp(Variable(summation[i].cuda(),volatile=True)).data.clone()
+            else:
+                sumUp[i] = mmUp(Variable(summation[i],volatile=True)).data.clone()
+
         # print(summation[i].size())
 
     #normalizing the final mask.
