@@ -1,0 +1,10 @@
+**/*.jpg
+**/*.png
+**/*.JPEG
+
+**/*.tar
+**/*.log
+
+backup/
+**/*.txt
+**/*.xml
