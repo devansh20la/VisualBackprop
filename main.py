@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from torchvision import datasets, transforms
+from torchvision import transforms
+from data_loader import ImageFolder
 import os
 import argparse
 import mod_vgg
@@ -22,7 +23,7 @@ def main(args):
 					transforms.ToTensor(),
 					normalize])
 
-	dsets = datasets.ImageFolder(os.path.join(args.dir), transform=trans)
+	dsets = ImageFolder(os.path.join(args.dir), transform=trans)
 
 	dset_loaders = torch.utils.data.DataLoader(dsets,batch_size= args.bs, num_workers=10, shuffle=True)
 
@@ -50,6 +51,7 @@ def main(args):
 	for batch_idx, inp_data in enumerate(dset_loaders,1):
 
 		inputs = inp_data[0]
+		paths = inp_data[2]
 
 		if args.use_cuda:
 			inputs = inputs.cuda()
@@ -58,16 +60,21 @@ def main(args):
 			outputs, vis_mask = model(inputs)
 			output_seg = back_model(vis_mask)
 
-			vutils.save_image(output_seg, os.path.join(args.results_dir,'{0}_outputseg.png'.format(batch_idx)))
-			vutils.save_image(inputs, os.path.join(args.results_dir,'{0}_input.png'.format(batch_idx)), normalize=True)
+			for img,img_mask,p in zip(inputs,output_seg,paths):
 
-			overlayed = inputs.clone()
-			overlayed[:,0,:,:] = overlayed[:,0,:,:] + 10*output_seg[:,0,:,:]
-			vutils.save_image(overlayed,os.path.join(args.results_dir,'{0}_overlaid.png'.format(batch_idx)),normalize=True,padding=0)
+				save_path = os.path.join(args.res_dir,p.split(args.dir+'/')[1].split('.')[0])
+				create_path(os.path.join(save_path.split('/')[0],save_path.split('/')[1]))
+
+				vutils.save_image(img, save_path +'_img.png',normalize=True,padding=0)
+				vutils.save_image(img_mask, save_path +'_outputseg.png')
+
+				overlayed = inputs.clone()
+				overlayed[:,0,:,:] = overlayed[:,0,:,:] + 10*output_seg[:,0,:,:]
+				vutils.save_image(overlayed,save_path+'_over.png',normalize=True,padding=0)
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description='PyTorch LUPI Training')
+	parser = argparse.ArgumentParser(description='Visual Back Prop')
 	parser.add_argument('--cp','--checkpoint',type=str,default='')
 	parser.add_argument('--ms','--manual_seed',type=int,default=500)
 	parser.add_argument('--bs','--batch_size',type=int,default=1)
@@ -81,7 +88,6 @@ if __name__ == '__main__':
 	if args.use_cuda:
 		torch.cuda.manual_seed_all(args.ms)
 
-	args.results_dir = os.path.join('results')
-	create_path(args.results_dir)
+	args.res_dir = 'results'
 
 	main(args)
