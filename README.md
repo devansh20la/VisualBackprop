@@ -47,7 +47,7 @@ The results are saved in the results directory. Here are sample results for VGG1
 
 ## Acknowledgments
 
-We thank Dr. Marius Bojarski NVIDIA Corporation for inpirations and useful feedbacks.
+We thank Dr. Marius Bojarski @mbojarski NVIDIA Corporation for useful feedbacks.
 
 
 
