@@ -6,6 +6,7 @@ import os
 import argparse
 import mod_vgg
 import torchvision.utils as vutils
+from tqdm import tqdm 
 
 def create_path(path):
 	if os.path.isdir(path)==False:
@@ -48,7 +49,7 @@ def main(args):
 		model.load_state_dict(state['model'])
 
 
-	for batch_idx, inp_data in enumerate(dset_loaders,1):
+	for batch_idx, inp_data in enumerate(tqdm(dset_loaders),1):
 
 		inputs = inp_data[0]
 		paths = inp_data[2]

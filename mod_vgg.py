@@ -66,16 +66,11 @@ class VGG(nn.Module):
 
 	def handlesequential(self,layer,x,output):
 
-		# Relu after the last convolution operation
-		size = 42
-
 		for i,module in enumerate(layer.children()):
 			x = module(x)
 			if type(module) == nn.ReLU:
 				x2 = x.clone()
-				if i != size:
-					x2 = x2.detach()
-					x2.requires_grad = True
+				x2 = x2.detach()
 				x2 = x2.sum(1,keepdim=True)
 				output.append(x2)
 		return x
