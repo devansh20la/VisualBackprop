@@ -10,6 +10,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```
 Pytorch 1.0
+tqdm {for pretty progress bars}
 ```
 
 ## Run
