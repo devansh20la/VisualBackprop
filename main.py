@@ -6,32 +6,45 @@ import os
 import argparse
 import mod_vgg
 import torchvision.utils as vutils
-from tqdm import tqdm 
+from tqdm import tqdm
+import multiprocessing as ml
+import time
+
+
+def pooling_worker(img, img_mask, p):
+	save_path = os.path.join(args.res_dir, p.split(args.dir + '/')[1].split('.')[0])
+	create_path(os.path.join(save_path.split('/')[0], save_path.split('/')[1]))
+	vutils.save_image(img, save_path + '_img.png', normalize=True, padding=0)
+	vutils.save_image(img_mask, save_path + '_outputseg.png')
+	img[0, :, :] = img[0, :, :] + 10 * img_mask[0, :, :]
+	vutils.save_image(img, save_path + '_over.png', normalize=True, padding=0)
+
 
 def create_path(path):
-	if os.path.isdir(path)==False:
+	if os.path.isdir(path) is False:
 		os.makedirs(path)
+
 
 def main(args):
 
 	print("....Initializing data sampler.....")
 
 	normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+									 std=[0.229, 0.224, 0.225])
 
-	trans = transforms.Compose([transforms.Resize(224), 
-					transforms.CenterCrop(224),
-					transforms.ToTensor(),
-					normalize])
+	trans = transforms.Compose([transforms.Resize(224),
+								transforms.CenterCrop(224),
+								transforms.ToTensor(),
+								normalize])
 
 	dsets = ImageFolder(os.path.join(args.dir), transform=trans)
 
-	dset_loaders = torch.utils.data.DataLoader(dsets,batch_size= args.bs, num_workers=10, shuffle=True)
+	dset_loaders = torch.utils.data.DataLoader(dsets, batch_size=args.bs,
+											   num_workers=10, shuffle=True)
 
 	print("....Loading Model.....")
 	model = mod_vgg.vgg16_bn(pretrained=True)
 	back_model = mod_vgg.vis_model()
-
 	model.eval()
 	back_model.eval()
 
@@ -48,38 +61,43 @@ def main(args):
 		state = torch.load(args.cp)
 		model.load_state_dict(state['model'])
 
-
 	for batch_idx, inp_data in enumerate(tqdm(dset_loaders),1):
 
 		inputs = inp_data[0]
 		paths = inp_data[2]
+		targets = inp_data[1]
 
 		if args.use_cuda:
-			inputs = inputs.cuda()
+			inputs, targets = inputs.cuda(), targets.cuda()
 
 		with torch.no_grad():
 			outputs, vis_mask = model(inputs)
 			output_seg = back_model(vis_mask)
 
-			for img,img_mask,p in zip(inputs,output_seg,paths):
+			_, preds = torch.max(outputs, 1)
 
-				save_path = os.path.join(args.res_dir,p.split(args.dir+'/')[1].split('.')[0])
-				create_path(os.path.join(save_path.split('/')[0],save_path.split('/')[1]))
+			# print(preds, targets)
+			idx = (preds != targets).nonzero().type(torch.LongTensor)
+			idx = idx.view(-1)
 
-				vutils.save_image(img, save_path +'_img.png',normalize=True,padding=0)
-				vutils.save_image(img_mask, save_path +'_outputseg.png')
+			pool = ml.Pool(processes=1)
 
-				overlayed = inputs.clone()
-				overlayed[:,0,:,:] = overlayed[:,0,:,:] + 10*output_seg[:,0,:,:]
-				vutils.save_image(overlayed,save_path+'_over.png',normalize=True,padding=0)
+			inputs, targets, output_seg, idx = inputs.cpu(), targets.cpu(), output_seg.cpu(), idx.cpu()
+
+			for i in idx:
+				img, img_mask, p = inputs[i, :, :, :], output_seg[i, :, :, :], paths[i]
+				pool.apply_async(pooling_worker, args=(img, img_mask, p))
+
+			pool.close()
+			pool.join()
 
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Visual Back Prop')
-	parser.add_argument('--cp','--checkpoint',type=str,default='')
-	parser.add_argument('--ms','--manual_seed',type=int,default=500)
-	parser.add_argument('--bs','--batch_size',type=int,default=1)
-	parser.add_argument('--dir','--directory',default='data')
+	parser.add_argument('--cp', '--checkpoint', type=str, default='')
+	parser.add_argument('--ms', '--manual_seed', type=int, default=500)
+	parser.add_argument('--bs', '--batch_size', type=int, default=10)
+	parser.add_argument('--dir', '--directory', default='data')
 
 	args = parser.parse_args()
 	torch.manual_seed(args.ms)
